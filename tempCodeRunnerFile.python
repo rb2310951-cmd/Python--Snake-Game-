@@ -1,0 +1,194 @@
+import pygame
+import random
+import os
+
+# Initialize pygame
+pygame.init()
+pygame.mixer.init()
+
+# Screen size
+width = 700
+height = 500
+
+screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption("Advanced Snake Game by Uday")
+
+# Colors
+white = (255, 255, 255)
+green = (0, 200, 0)
+red = (200, 0, 0)
+black = (0, 0, 0)
+blue = (50, 153, 213)
+
+# Snake settings
+snake_block = 10
+snake_speed = 15
+
+clock = pygame.time.Clock()
+
+font_style = pygame.font.SysFont(None, 35)
+score_font = pygame.font.SysFont(None, 40)
+
+# Load sounds
+try:
+    food_sound = pygame.mixer.Sound("food.wav")
+    gameover_sound = pygame.mixer.Sound("gameover.wav")
+except:
+    food_sound = None
+    gameover_sound = None
+
+# Highscore file
+if not os.path.exists("highscore.txt"):
+    with open("highscore.txt", "w") as f:
+        f.write("0")
+
+def get_highscore():
+    with open("highscore.txt", "r") as f:
+        return int(f.read())
+
+def save_highscore(score):
+    highscore = get_highscore()
+    if score > highscore:
+        with open("highscore.txt", "w") as f:
+            f.write(str(score))
+
+def Your_score(score):
+    value = score_font.render("Score: " + str(score), True, black)
+    high = score_font.render("High: " + str(get_highscore()), True, black)
+    screen.blit(value, [10, 10])
+    screen.blit(high, [10, 40])
+
+def our_snake(snake_block, snake_list):
+    for x in snake_list:
+        pygame.draw.rect(screen, green,
+                         [x[0], x[1], snake_block, snake_block])
+
+def message(msg, color):
+    mesg = font_style.render(msg, True, color)
+    screen.blit(mesg, [width / 6, height / 3])
+
+def gameLoop():
+
+    game_over = False
+    game_close = False
+
+    x1 = width / 2
+    y1 = height / 2
+
+    x1_change = 0
+    y1_change = 0
+
+    snake_List = []
+    Length_of_snake = 1
+
+    foodx = round(random.randrange(
+        0, width - snake_block) / 10.0) * 10.0
+    foody = round(random.randrange(
+        0, height - snake_block) / 10.0) * 10.0
+
+    while not game_over:
+
+        while game_close == True:
+
+            if gameover_sound:
+                gameover_sound.play()
+
+            save_highscore(Length_of_snake - 1)
+
+            screen.fill(blue)
+
+            message("Game Over! Press C-Play Again or Q-Quit",
+                    red)
+
+            Your_score(Length_of_snake - 1)
+
+            pygame.display.update()
+
+            for event in pygame.event.get():
+
+                if event.type == pygame.KEYDOWN:
+
+                    if event.key == pygame.K_q:
+                        game_over = True
+                        game_close = False
+
+                    if event.key == pygame.K_c:
+                        gameLoop()
+
+        for event in pygame.event.get():
+
+            if event.type == pygame.QUIT:
+                game_over = True
+
+            if event.type == pygame.KEYDOWN:
+
+                if event.key == pygame.K_LEFT:
+                    x1_change = -snake_block
+                    y1_change = 0
+
+                elif event.key == pygame.K_RIGHT:
+                    x1_change = snake_block
+                    y1_change = 0
+
+                elif event.key == pygame.K_UP:
+                    y1_change = -snake_block
+                    x1_change = 0
+
+                elif event.key == pygame.K_DOWN:
+                    y1_change = snake_block
+                    x1_change = 0
+
+        # Wall collision
+        if x1 >= width or x1 < 0 or y1 >= height or y1 < 0:
+            game_close = True
+
+        x1 += x1_change
+        y1 += y1_change
+
+        # Background color
+        screen.fill(blue)
+
+        pygame.draw.rect(screen, red,
+                         [foodx, foody,
+                          snake_block, snake_block])
+
+        snake_Head = []
+        snake_Head.append(x1)
+        snake_Head.append(y1)
+
+        snake_List.append(snake_Head)
+
+        if len(snake_List) > Length_of_snake:
+            del snake_List[0]
+
+        # Self collision
+        for x in snake_List[:-1]:
+            if x == snake_Head:
+                game_close = True
+
+        our_snake(snake_block, snake_List)
+
+        Your_score(Length_of_snake - 1)
+
+        pygame.display.update()
+
+        # Food collision
+        if x1 == foodx and y1 == foody:
+
+            if food_sound:
+                food_sound.play()
+
+            foodx = round(random.randrange(
+                0, width - snake_block) / 10.0) * 10.0
+
+            foody = round(random.randrange(
+                0, height - snake_block) / 10.0) * 10.0
+
+            Length_of_snake += 1
+
+        clock.tick(snake_speed)
+
+    pygame.quit()
+    quit()
+
+gameLoop()
